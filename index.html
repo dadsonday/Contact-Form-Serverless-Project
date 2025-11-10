@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serverless Contact Form</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Send Us a Message</h1>
+        
+        <form id="contact-form">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="subject">Subject</label>
+            <input type="text" id="subject" name="subject" required>
+
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="5" required></textarea>
+
+            <button type="submit" id="submit-button">Send Message</button>
+
+            <p id="form-status" aria-live="polite"></p>
+        </form>
+    </div>
+
+    <script>
+        // *** IMPORTANT: REPLACE THIS PLACEHOLDER WITH YOUR DEPLOYED API GATEWAY INVOKE URL ***
+        const API_ENDPOINT = 'YOUR_API_GATEWAY_INVOKE_URL_HERE';
+
+        const form = document.getElementById('contact-form');
+        const statusMessage = document.getElementById('form-status');
+        const submitButton = document.getElementById('submit-button');
+
+        form.addEventListener('submit', function(event) {
+            // Prevent the default form submission (which would refresh the page)
+            event.preventDefault(); 
+            
+            // Collect form data
+            const formData = new FormData(form);
+            const payload = {};
+            formData.forEach((value, key) => {
+                payload[key] = value;
+            });
+
+            // Show loading state
+            statusMessage.textContent = 'Sending...';
+            submitButton.disabled = true;
+
+            fetch(API_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload) // Convert the data object to a JSON string
+            })
+            .then(response => {
+                // Check for a successful response (status 200-299)
+                if (response.ok) {
+                    return response.json(); // Process the JSON response from Lambda/API Gateway
+                }
+                // Handle HTTP error responses
+                throw new Error(`Submission failed: ${response.status} ${response.statusText}`);
+            })
+            .then(data => {
+                // Success
+                statusMessage.textContent = '✅ Message sent successfully! We will be in touch soon.';
+                form.reset(); // Clear the form fields
+            })
+            .catch(error => {
+                // Error handling
+                console.error('Error submitting form:', error);
+                statusMessage.textContent = `❌ An error occurred: ${error.message}. Please try again.`;
+            })
+            .finally(() => {
+                // Re-enable the button after process completes
+                submitButton.disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>
